@@ -1,42 +1,42 @@
-# Приложение для анализа состава бетона
+# Concrete Composition Analysis Application
 
-Веб-приложение для визуализации результатов исследований мелкозернистого бетона.
+Web application for visualizing fine-grained concrete research results.
 
-## Как запустить
+## How to Run
 
-### Шаг 1: Установите Python (если еще не установлен)
-Скачайте с https://www.python.org/downloads/
+### Step 1: Install Python (if not already installed)
+Download from https://www.python.org/downloads/
 
-### Шаг 2: Установите необходимые библиотеки
-Откройте PowerShell в этой папке и выполните:
+### Step 2: Install required libraries
+Open PowerShell in this folder and execute:
 ```powershell
 pip install -r requirements.txt
 ```
 
-### Шаг 3: Запустите приложение
+### Step 3: Run the application
 ```powershell
 streamlit run app.py
 ```
 
-Приложение автоматически откроется в браузере!
+The application will automatically open in your browser!
 
-## Что показывает приложение
+## What the Application Shows
 
-✅ **Ключевые метрики** - оптимальная доля цемента и максимальные значения прочности
+✅ **Key Metrics** - optimal cement ratio and maximum strength values
 
-✅ **Графики прочности** - 4 диаграммы показывающие все характеристики
+✅ **Strength Charts** - 4 diagrams showing all characteristics
 
-✅ **Сравнительный анализ** - линейные графики для сравнения разных типов прочности
+✅ **Comparative Analysis** - line graphs comparing different strength types
 
-✅ **Водовяжущее отношение** - зависимость от доли цемента
+✅ **Water-Binder Ratio** - dependency on cement ratio
 
-✅ **Таблицы данных** - исходные данные экспериментов
+✅ **Data Tables** - original experimental data
 
-✅ **Автоматические выводы** - подтверждение что 80% цемента оптимально
+✅ **Automatic Conclusions** - confirmation that 80% cement is optimal
 
-## Особенности
+## Features
 
-- 🎨 Красный цвет выделяет оптимальный состав (80% цемента)
-- 📊 Интерактивные графики (можно увеличивать, сохранять)
-- 💾 Все графики можно экспортировать как изображения
-- 📱 Адаптивный дизайн для любых экранов
+- 🎨 Red color highlights the optimal composition (80% cement)
+- 📊 Interactive charts (can zoom, save)
+- 💾 All charts can be exported as images
+- 📱 Responsive design for any screen
