@@ -225,7 +225,7 @@ fig.update_yaxes(title_text="МПа", row=2, col=1)
 fig.update_yaxes(title_text="см", row=2, col=2)
 
 fig.update_layout(height=700, showlegend=False)
-st.plotly_chart(fig, use_container_width=True)
+st.plotly_chart(fig, width='stretch')
 
 st.subheader("Сравнительный анализ всех прочностных характеристик")
 
@@ -277,7 +277,7 @@ fig2.update_layout(
     )
 )
 
-st.plotly_chart(fig2, use_container_width=True)
+st.plotly_chart(fig2, width='stretch')
 
 st.subheader("Зависимость водовяжущего отношения от доли цемента")
 
@@ -305,7 +305,7 @@ fig3.update_layout(
     showlegend=False
 )
 
-st.plotly_chart(fig3, use_container_width=True)
+st.plotly_chart(fig3, width='stretch')
 
 
 st.subheader("🎨 3D Визуализация")
@@ -346,7 +346,7 @@ fig_3d.update_layout(
     margin=dict(l=0, r=0, b=0, t=0)
 )
 
-st.plotly_chart(fig_3d, use_container_width=True)
+st.plotly_chart(fig_3d, width='stretch')
 
 
 if show_individual:
@@ -359,7 +359,7 @@ if show_individual:
                       title='Прочность на сжатие: Эксперимент 1 vs Эксперимент 2')
     
     fig4.update_layout(height=500)
-    st.plotly_chart(fig4, use_container_width=True)
+    st.plotly_chart(fig4, width='stretch')
 
 
 st.subheader("Исходные данные")
