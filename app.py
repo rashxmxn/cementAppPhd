@@ -43,11 +43,46 @@ df_avg = df.groupby('Cement_share (%)').agg({
 
 
 st.subheader("Экспериментальные данные")
+
+# Excel file uploader
+uploaded_file = st.file_uploader(
+    "Загрузите Excel файл с данными (опционально)",
+    type=['xlsx', 'xls'],
+    help="Файл должен содержать колонки: Cement_share (%), W_B, Additive (%), Fiber (%), Rc28 (МПа), Rt (МПа), Rras (МПа), PGR (см), Experiment"
+)
+
+if uploaded_file is not None:
+    try:
+        # Read Excel file
+        df_uploaded = pd.read_excel(uploaded_file)
+        
+        # Check if required columns exist
+        required_columns = ['Cement_share (%)', 'W_B', 'Additive (%)', 'Fiber (%)', 
+                          'Rc28 (МПа)', 'Rt (МПа)', 'Rras (МПа)', 'PGR (см)', 'Experiment']
+        
+        if all(col in df_uploaded.columns for col in required_columns):
+            # Remove № column from uploaded data if exists
+            if '№' in df_uploaded.columns:
+                df_uploaded = df_uploaded.drop(columns=['№'])
+            # Add uploaded data to existing data
+            df = pd.concat([df, df_uploaded], ignore_index=True)
+            # Recalculate № column
+            df['№'] = range(1, len(df) + 1)
+            st.success(f"Добавлено {len(df_uploaded)} строк из Excel файла! Данные отображены в таблице ниже.")
+        else:
+            missing_cols = [col for col in required_columns if col not in df_uploaded.columns]
+            st.error(f"В файле отсутствуют колонки: {', '.join(missing_cols)}")
+            st.info("Используются данные по умолчанию. Проверьте формат Excel файла.")
+    except Exception as e:
+        st.error(f"Ошибка при чтении файла: {str(e)}")
+        st.info("Используются данные по умолчанию.")
+
 st.markdown("""
 Ниже представлены результаты лабораторных испытаний образцов мелкозернистого бетона 
 с различным содержанием цемента (50%, 60%, 70%, 80%).
 
 **Инструкции:**
+- **Импорт Excel:** загрузите файл выше - данные сразу появятся в таблице
 - **Редактировать:** двойной клик по ячейке
 - **Добавить строку:** кнопка + внизу таблицы
 - **Удалить строку:** наведите на номер строки и кликните на значок корзины
@@ -225,7 +260,7 @@ fig.update_yaxes(title_text="МПа", row=2, col=1)
 fig.update_yaxes(title_text="см", row=2, col=2)
 
 fig.update_layout(height=700, showlegend=False)
-st.plotly_chart(fig, width='stretch')
+st.plotly_chart(fig, use_container_width=True)
 
 st.subheader("Сравнительный анализ всех прочностных характеристик")
 
@@ -277,7 +312,7 @@ fig2.update_layout(
     )
 )
 
-st.plotly_chart(fig2, width='stretch')
+st.plotly_chart(fig2, use_container_width=True)
 
 st.subheader("Зависимость водовяжущего отношения от доли цемента")
 
@@ -305,10 +340,10 @@ fig3.update_layout(
     showlegend=False
 )
 
-st.plotly_chart(fig3, width='stretch')
+st.plotly_chart(fig3, use_container_width=True)
 
 
-st.subheader("🎨 3D Визуализация")
+st.subheader("3D Визуализация")
 st.markdown("""
 Интерактивная 3D диаграмма показывает зависимость прочности на сжатие от доли цемента и водовяжущего отношения.  
 *Используйте мышь для вращения графика*
@@ -346,7 +381,7 @@ fig_3d.update_layout(
     margin=dict(l=0, r=0, b=0, t=0)
 )
 
-st.plotly_chart(fig_3d, width='stretch')
+st.plotly_chart(fig_3d, use_container_width=True)
 
 
 if show_individual:
@@ -359,7 +394,7 @@ if show_individual:
                       title='Прочность на сжатие: Эксперимент 1 vs Эксперимент 2')
     
     fig4.update_layout(height=500)
-    st.plotly_chart(fig4, width='stretch')
+    st.plotly_chart(fig4, use_container_width=True)
 
 
 st.subheader("Исходные данные")
