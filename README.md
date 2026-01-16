@@ -18,25 +18,16 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-The application will automatically open in your browser!
-
 ## What the Application Shows
 
-✅ **Key Metrics** - optimal cement ratio and maximum strength values
+**Key Metrics** - optimal cement ratio and maximum strength values
 
-✅ **Strength Charts** - 4 diagrams showing all characteristics
+**Strength Charts** - 4 diagrams showing all characteristics
 
-✅ **Comparative Analysis** - line graphs comparing different strength types
+**Comparative Analysis** - line graphs comparing different strength types
 
-✅ **Water-Binder Ratio** - dependency on cement ratio
+**Water-Binder Ratio** - dependency on cement ratio
 
-✅ **Data Tables** - original experimental data
+**Data Tables** - original experimental data
 
-✅ **Automatic Conclusions** - confirmation that 80% cement is optimal
-
-## Features
-
-- 🎨 Red color highlights the optimal composition (80% cement)
-- 📊 Interactive charts (can zoom, save)
-- 💾 All charts can be exported as images
-- 📱 Responsive design for any screen
+**Automatic Conclusions** - confirmation that 80% cement is optimal
