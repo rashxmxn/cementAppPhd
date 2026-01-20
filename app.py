@@ -4,6 +4,9 @@ import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
 import time
+from io import BytesIO
+import numpy as np
+from scipy import stats
 
 st.set_page_config(
     page_title="Анализ состава бетона",
@@ -64,11 +67,25 @@ if uploaded_file is not None:
             # Remove № column from uploaded data if exists
             if '№' in df_uploaded.columns:
                 df_uploaded = df_uploaded.drop(columns=['№'])
+            
+            # Data validation
+            warnings = []
+            if (df_uploaded['Cement_share (%)'] < 0).any() or (df_uploaded['Cement_share (%)'] > 100).any():
+                warnings.append("⚠️ Доля цемента должна быть от 0% до 100%")
+            if (df_uploaded['W_B'] <= 0).any():
+                warnings.append("⚠️ Водовяжущее отношение должно быть положительным")
+            if (df_uploaded[['Rc28 (МПа)', 'Rt (МПа)', 'Rras (МПа)']] < 0).any().any():
+                warnings.append("⚠️ Значения прочности не могут быть отрицательными")
+            
+            if warnings:
+                for warning in warnings:
+                    st.warning(warning)
+            
             # Add uploaded data to existing data
             df = pd.concat([df, df_uploaded], ignore_index=True)
             # Recalculate № column
             df['№'] = range(1, len(df) + 1)
-            st.success(f"Добавлено {len(df_uploaded)} строк из Excel файла! Данные отображены в таблице ниже.")
+            st.success(f"✅ Добавлено {len(df_uploaded)} строк из Excel файла! Данные отображены в таблице ниже.")
         else:
             missing_cols = [col for col in required_columns if col not in df_uploaded.columns]
             st.error(f"В файле отсутствуют колонки: {', '.join(missing_cols)}")
@@ -343,6 +360,115 @@ fig3.update_layout(
 st.plotly_chart(fig3, use_container_width=True)
 
 
+st.subheader("Регрессионный анализ")
+
+x = df_avg['Cement_share (%)'].values
+regression_data = []
+
+for param, name in [('Rc28 (МПа)', 'Прочность на сжатие'), 
+                     ('Rt (МПа)', 'Прочность на растяжение'),
+                     ('Rras (МПа)', 'Прочность на раскалывание')]:
+    y = df_avg[param].values
+    slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
+    r_squared = r_value**2
+    
+    x_line = np.linspace(x.min(), x.max(), 100)
+    y_line = slope * x_line + intercept
+    
+    regression_data.append({
+        'param': param,
+        'name': name,
+        'slope': slope,
+        'intercept': intercept,
+        'r_squared': r_squared,
+        'x_line': x_line,
+        'y_line': y_line
+    })
+
+fig_reg = make_subplots(
+    rows=1, cols=3,
+    subplot_titles=[r['name'] for r in regression_data],
+    horizontal_spacing=0.12
+)
+
+colors_reg = ['#3498db', '#e74c3c', '#2ecc71']
+
+for idx, reg in enumerate(regression_data, 1):
+    fig_reg.add_trace(
+        go.Scatter(
+            x=df_avg['Cement_share (%)'],
+            y=df_avg[reg['param']],
+            mode='markers',
+            name=reg['name'],
+            marker=dict(size=12, color=colors_reg[idx-1]),
+            showlegend=False
+        ),
+        row=1, col=idx
+    )
+    
+    fig_reg.add_trace(
+        go.Scatter(
+            x=reg['x_line'],
+            y=reg['y_line'],
+            mode='lines',
+            name=f"Тренд",
+            line=dict(color=colors_reg[idx-1], width=2, dash='dash'),
+            showlegend=False
+        ),
+        row=1, col=idx
+    )
+    
+    equation = f"y = {reg['slope']:.3f}x + {reg['intercept']:.2f}<br>R² = {reg['r_squared']:.3f}"
+    xref = 'x domain' if idx == 1 else f'x{idx} domain'
+    yref = 'y domain' if idx == 1 else f'y{idx} domain'
+    
+    fig_reg.add_annotation(
+        x=0.5,
+        y=0.95,
+        xref=xref,
+        yref=yref,
+        text=equation,
+        showarrow=False,
+        font=dict(size=10),
+        bgcolor="rgba(255, 255, 255, 0.8)",
+        bordercolor=colors_reg[idx-1],
+        borderwidth=1
+    )
+
+fig_reg.update_xaxes(title_text="Доля цемента (%)")
+fig_reg.update_yaxes(title_text="МПа", row=1, col=1)
+fig_reg.update_yaxes(title_text="МПа", row=1, col=2)
+fig_reg.update_yaxes(title_text="МПа", row=1, col=3)
+
+fig_reg.update_layout(height=400, showlegend=False)
+st.plotly_chart(fig_reg, use_container_width=True)
+
+st.markdown("**Корреляционная матрица:**")
+corr_cols = ['Cement_share (%)', 'Rc28 (МПа)', 'Rt (МПа)', 'Rras (МПа)', 'W_B']
+correlation_matrix = df[corr_cols].corr()
+
+fig_corr = go.Figure(data=go.Heatmap(
+    z=correlation_matrix.values,
+    x=corr_cols,
+    y=corr_cols,
+    colorscale='RdBu',
+    zmid=0,
+    text=correlation_matrix.values.round(2),
+    texttemplate='%{text}',
+    textfont={"size": 12},
+    colorbar=dict(title="Корреляция")
+))
+
+fig_corr.update_layout(
+    title="Матрица корреляций между параметрами",
+    height=500,
+    xaxis_title="",
+    yaxis_title=""
+)
+
+st.plotly_chart(fig_corr, use_container_width=True)
+
+
 st.subheader("3D Визуализация")
 st.markdown("""
 Интерактивная 3D диаграмма показывает зависимость прочности на сжатие от доли цемента и водовяжущего отношения.  
@@ -400,8 +526,7 @@ if show_individual:
 st.subheader("Исходные данные")
 
 st.markdown("**Средние значения по долям цемента:**")
-st.dataframe(df_avg.style.highlight_max(axis=0, subset=['Rc28 (МПа)', 'Rt (МПа)', 'Rras (МПа)']), 
-             use_container_width=True, hide_index=True)
+st.dataframe(df_avg, use_container_width=True, hide_index=True)
 
 st.markdown("**Все экспериментальные данные:**")
 st.dataframe(df, use_container_width=True, hide_index=True)
@@ -409,17 +534,80 @@ st.dataframe(df, use_container_width=True, hide_index=True)
 
 st.subheader("Выводы")
 
+min_cement = df_avg['Cement_share (%)'].min()
+min_rc28 = df_avg['Rc28 (МПа)'].min()
+min_rt = df_avg['Rt (МПа)'].min()
+min_rras = df_avg['Rras (МПа)'].min()
+
+optimal_wb = df_avg[df_avg['Cement_share (%)'] == max_cement]['W_B'].values[0]
+optimal_pgr = df_avg[df_avg['Cement_share (%)'] == max_cement]['PGR (см)'].values[0]
+
 st.success(f"""
 ### Оптимальный состав: **{int(max_cement)}% цемента**
 
-**Преимущества состава с 80% цемента:**
--   Максимальная прочность на сжатие: **{max_rc28:.1f} МПа** (+{((max_rc28/df_avg['Rc28 (МПа)'].min() - 1) * 100):.1f}% по сравнению с 50%)
--   Максимальная прочность на растяжение: **{max_rt:.1f} МПа** (+{((max_rt/df_avg['Rt (МПа)'].min() - 1) * 100):.1f}% по сравнению с 50%)
--   Максимальная прочность на раскалывание: **{max_rras:.1f} МПа** (+{((max_rras/df_avg['Rras (МПа)'].min() - 1) * 100):.1f}% по сравнению с 50%)
--   Оптимальное водовяжущее отношение: **{df_avg[df_avg['Cement_share (%)'] == 80]['W_B'].values[0]:.3f}**
--   Хорошая подвижность смеси: **{df_avg[df_avg['Cement_share (%)'] == 80]['PGR (см)'].values[0]:.1f} см**
+**Преимущества состава с {int(max_cement)}% цемента:**
+-   Максимальная прочность на сжатие: **{max_rc28:.1f} МПа** (+{((max_rc28/min_rc28 - 1) * 100):.1f}% по сравнению с {int(min_cement)}%)
+-   Максимальная прочность на растяжение: **{max_rt:.1f} МПа** (+{((max_rt/min_rt - 1) * 100):.1f}% по сравнению с {int(min_cement)}%)
+-   Максимальная прочность на раскалывание: **{max_rras:.1f} МПа** (+{((max_rras/min_rras - 1) * 100):.1f}% по сравнению с {int(min_cement)}%)
+-   Оптимальное водовяжущее отношение: **{optimal_wb:.3f}**
+-   Хорошая подвижность смеси: **{optimal_pgr:.1f} см**
 
 """)
+
+st.divider()
+st.subheader("📥 Скачать отчет")
+
+def create_excel_report():
+    """Create Excel report with all data and analysis"""
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, sheet_name='Экспериментальные данные', index=False)
+
+        df_avg.to_excel(writer, sheet_name='Средние значения', index=False)
+
+        conclusions_data = {
+            'Параметр': [
+                'Оптимальная доля цемента (%)',
+                'Максимальная прочность Rc28 (МПа)',
+                'Максимальная прочность Rt (МПа)',
+                'Максимальная прочность Rras (МПа)',
+                'Водовяжущее отношение W/B',
+                'Подвижность смеси PGR (см)',
+                'Улучшение Rc28 (%)',
+                'Улучшение Rt (%)',
+                'Улучшение Rras (%)'
+            ],
+            'Значение': [
+                f"{int(max_cement)}%",
+                f"{max_rc28:.1f}",
+                f"{max_rt:.1f}",
+                f"{max_rras:.1f}",
+                f"{optimal_wb:.3f}",
+                f"{optimal_pgr:.1f}",
+                f"+{((max_rc28/min_rc28 - 1) * 100):.1f}%",
+                f"+{((max_rt/min_rt - 1) * 100):.1f}%",
+                f"+{((max_rras/min_rras - 1) * 100):.1f}%"
+            ]
+        }
+        pd.DataFrame(conclusions_data).to_excel(writer, sheet_name='Выводы', index=False)
+    
+    output.seek(0)
+    return output
+
+excel_report = create_excel_report()
+
+col_download1, col_download2, col_download3 = st.columns([1, 2, 1])
+with col_download2:
+    st.download_button(
+        label="📊 Скачать полный отчет (Excel)",
+        data=excel_report,
+        file_name=f"Анализ_бетона_{int(max_cement)}%_цемента.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        use_container_width=True,
+        type="primary"
+    )
+
+st.info("Отчет содержит 3 листа: экспериментальные данные, средние значения и выводы анализа")
 
 # Footer
 st.markdown("""
